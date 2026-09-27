@@ -610,9 +610,10 @@ AbyssDodge = true, ESPName = true, ESPHealthBar = true, ESPDistance = true, ESPS
             return {width = w, height = h, margin = margin, header = top, dock = dock}
         end
         if xk_isTouchLandscape() then
-            -- Keep the desktop composition as the master canvas on landscape touch.
-            -- The canvas itself stays stable; UIScale is responsible for fitting it.
-            return {width = 900, height = 600, margin = 8, header = 54, dock = 0}
+            -- Landscape touch uses the same PC master composition.
+            -- 1280x720 preserves the intended widescreen desktop proportions;
+            -- UIScale then fits that master canvas to the actual device viewport.
+            return {width = 1280, height = 720, margin = 8, header = 54, dock = 0}
         end
         local w = math.floor(math.clamp(vp.X * 0.78, 700, 980))
         local h = math.floor(math.clamp(vp.Y * 0.78, 470, 700))
@@ -1050,7 +1051,7 @@ then
     fwherj.Position = UDim2.fromOffset(24, 34);
     fwherj.Size = UDim2.fromOffset(300, 14)
     fwherj.Font = mgaaxo.Soft;
-    fwherj.Text = "v2  " .. tostring(_G.ZINKA_KEY) .. " / Insert";
+    fwherj.Text = "v4  " .. tostring(_G.ZINKA_KEY) .. " / Insert";
     fwherj.TextSize = rxxvgn.Small
     fwherj.TextColor3 = jsbusx.Dim;
     fwherj.TextStrokeColor3 = Color3.fromRGB(8, 8, 12);
@@ -1226,7 +1227,7 @@ then
             if fwherj then
                 fwherj.Position = UDim2.fromOffset(mobile and 18 or 24, 32)
                 fwherj.Size = UDim2.new(1, mobile and -120 or -170, 0, 14)
-                fwherj.Text = mobile and "Touch UI  •  drag header to move" or ("v2  " .. tostring(_G.ZINKA_KEY) .. " / Insert")
+                fwherj.Text = mobile and "Touch UI  •  drag header to move" or ("v4  " .. tostring(_G.ZINKA_KEY) .. " / Insert")
             end
             local headerBtn = mobile and 38 or 30
             amdbtm.Size = UDim2.fromOffset(headerBtn, headerBtn)
@@ -1260,6 +1261,29 @@ then
                     entry.ind.Size = UDim2.fromOffset(3, mobile and 24 or 20)
                 end
             end
+
+            -- Hard-normalize page child width after every viewport/root resize.
+            -- This prevents legacy fixed-width controls from leaving a large empty
+            -- right-hand area on landscape mobile.
+            for _, page in ipairs(uetupc) do
+                if page and page:IsA("ScrollingFrame") then
+                    page.Size = UDim2.fromScale(1, 1)
+                    for _, child in ipairs(page:GetChildren()) do
+                        if child:IsA("Frame") or child:IsA("TextButton") or child:IsA("TextLabel") or
+                           child:IsA("ImageButton") or child:IsA("ImageLabel") then
+                            -- Keep the child's local Y sizing intact; only normalize X.
+                            -- Using Scale=1 avoids UIScale-dependent pixel math and guarantees
+                            -- that rows occupy the entire page width.
+                            local yScale = child.Size.Y.Scale
+                            local yOffset = child.Size.Y.Offset
+                            if child.Size.X.Scale ~= 1 or child.Size.X.Offset ~= 0 then
+                                child.Size = UDim2.new(1, 0, yScale, yOffset)
+                            end
+                        end
+                    end
+                end
+            end
+
             if mobileDock then
                 for _, child in ipairs(mobileDock:GetChildren()) do
                     if child:IsA("TextButton") then
@@ -1485,6 +1509,11 @@ then
     tuyxyk(cjcrem.InputChanged:Connect(function (dgogze)
         if drrrnf and xk_isPointerMove(dgogze) then
             drrrnf(dgogze.Position)
+        end
+    end))
+    tuyxyk(cjcrem.TouchMoved:Connect(function (input)
+        if drrrnf then
+            drrrnf(input.Position)
         end
     end))
     local function noojjl(norfal, eawlka)
@@ -14447,11 +14476,12 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
             spozkj.Text = "press any key"
         end)
         local function juieee()
-            if xk_isMobileUI() then
-                local m = xk_layoutMetrics()
+            local m = xk_layoutMetrics()
+            -- Never reuse stale menu dimensions on landscape touch; doing so was
+            -- the main reason the UI kept reopening at the old 900x600 canvas.
+            if xk_isTouchLandscape() or xk_isMobileUI() then
                 return UDim2.fromOffset(m.width, m.height)
             end
-            local m = xk_layoutMetrics()
             return _G.__ZINKA_MENUSIZE or UDim2.fromOffset(m.width, m.height)
         end
         local function pdofxh()
@@ -15795,11 +15825,17 @@ and Color3.fromRGB(120, 235, 150) or Color3.fromRGB(90, 90, 115)
             _G.__ZINKA_SCROLL_GUARD = xk_touchGuardEnabled
 
             if xk_isTouchLandscape() then
-                -- Stable master canvas. This is what preserves the PC design on mobile landscape.
-                nkdodd.Size = UDim2.fromOffset(900, 600)
-                local fit = math.min((vp.X - 16) / 900, (vp.Y - 16) / 600)
-                local finalScale = math.clamp(fit * guiScale, 0.55, 1.15)
-                zGuiScale.Scale = finalScale
+                -- Stable 1280x720 master canvas: exact PC composition, scaled to device.
+                local master = xk_layoutMetrics()
+                nkdodd.Size = UDim2.fromOffset(master.width, master.height)
+                local fit = math.min(
+                    math.max((vp.X - 16) / master.width, 0.01),
+                    math.max((vp.Y - 16) / master.height, 0.01)
+                )
+                -- 94% baseline gives a small safety margin for system insets;
+                -- manual UI scale can grow/shrink inside that available space.
+                local finalScale = math.min(fit, fit * 0.94 * guiScale)
+                zGuiScale.Scale = math.clamp(finalScale, 0.55, math.max(fit, 0.55))
             elseif xk_isMobileUI() then
                 local metrics = xk_layoutMetrics()
                 nkdodd.Size = UDim2.fromOffset(metrics.width, metrics.height)
@@ -15826,7 +15862,7 @@ and Color3.fromRGB(120, 235, 150) or Color3.fromRGB(90, 90, 115)
 
             -- Scale hit targets only. The visual PC/mobile-landscape composition remains unchanged.
             for _, obj in ipairs(mdwekd:GetDescendants()) do
-                if obj:IsA("TextButton") then
+                if obj:IsA("TextButton") and obj.Size.Y.Scale == 0 then
                     local baseY = obj:GetAttribute("ZBaseHeight")
                     if baseY == nil then
                         baseY = obj.Size.Y.Offset
@@ -16007,16 +16043,24 @@ and Color3.fromRGB(120, 235, 150) or Color3.fromRGB(90, 90, 115)
             if not xk_touchTapAllowed() then return end
         pcall(dxwxnd)
     end)
-    local initialMenuTarget = UDim2.fromOffset(zuiMetrics.width, zuiMetrics.height)
-    if xk_isMobileUI() then
-        local m = xk_layoutMetrics()
-        initialMenuTarget = UDim2.fromOffset(m.width, m.height)
-    elseif _G.__ZINKA_MENUSIZE then
+    local initialMenuMetrics = xk_layoutMetrics()
+    local initialMenuTarget = UDim2.fromOffset(initialMenuMetrics.width, initialMenuMetrics.height)
+    if not xk_isTouchLandscape() and not xk_isMobileUI() and _G.__ZINKA_MENUSIZE then
         initialMenuTarget = _G.__ZINKA_MENUSIZE
     end
     nkdodd.Size = UDim2.fromOffset(initialMenuTarget.X.Offset, 0)
     hgwovb(nkdodd, {Size = initialMenuTarget}, 0.4, Enum.EasingStyle.Back):Play()
-    _G.__ZINKA_MENUSIZE = initialMenuTarget
+    if not xk_isTouchLandscape() then
+        _G.__ZINKA_MENUSIZE = initialMenuTarget
+    end
+    pcall(function()
+        if type(_G.__ZINKA_APPLY_GUI_SCALE) == "function" then
+            _G.__ZINKA_APPLY_GUI_SCALE()
+        end
+        if type(_G.__ZINKA_RELAYOUT) == "function" then
+            _G.__ZINKA_RELAYOUT()
+        end
+    end)
     task.defer(function ()
         if not fordjx() then
             return
