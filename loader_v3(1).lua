@@ -567,35 +567,30 @@ AbyssDodge = true, ESPName = true, ESPHealthBar = true, ESPDistance = true, ESPS
         end
     end)()
     _G.ZINKA_KEY = _G.ZINKA_KEY or Enum.KeyCode.RightShift.Name
-    local jnwhbe = Color3.fromRGB(150, 120, 255)
+    -- Compact blue glass palette matching the reference layout.
+    local jnwhbe = Color3.fromRGB(35, 154, 255)
     local itfalj = Color3.fromRGB(255, 168, 76)
-    local ahkvqt = Color3.fromRGB(110, 205, 255)
+    local ahkvqt = Color3.fromRGB(75, 194, 255)
     local mgaaxo = {Title = Enum.Font.GothamBold, Head = Enum.Font.GothamBold, Body = Enum.Font.GothamMedium, Soft = Enum.Font.Gotham,
      Mono = Enum.Font.RobotoMono, Tab = Enum.Font.GothamMedium,}
     local rxxvgn = {Title = 19, Tab = 13, Section = 11, Row = 13, Value = 12, Small = 11, Tiny = 10,}
-    local jsbusx = {Bright = Color3.fromRGB(232, 232, 246), Normal = Color3.fromRGB(214, 214, 232), Dim = Color3.fromRGB(160,
-      160, 186), Faint = Color3.fromRGB(112, 112, 138),}
-    local hzowxr = {Row = Color3.fromRGB(23, 22, 32), RowHov = Color3.fromRGB(31, 30, 43), Sub = Color3.fromRGB(19, 18, 26),
-     Btn = Color3.fromRGB(30, 28, 44), BtnHov = Color3.fromRGB(44, 40, 64), Track = Color3.fromRGB(45, 44, 58), Off = Color3.fromRGB(50,
-          48, 62),}
+    local jsbusx = {Bright = Color3.fromRGB(235, 245, 255), Normal = Color3.fromRGB(207, 224, 241), Dim = Color3.fromRGB(137,
+      166, 194), Faint = Color3.fromRGB(82, 116, 146),}
+    local hzowxr = {Row = Color3.fromRGB(18, 35, 56), RowHov = Color3.fromRGB(24, 53, 80), Sub = Color3.fromRGB(12, 27, 45),
+     Btn = Color3.fromRGB(20, 48, 76), BtnHov = Color3.fromRGB(28, 79, 119), Track = Color3.fromRGB(33, 82, 116), Off = Color3.fromRGB(35,
+          58, 80),}
     -- Responsive UI helpers: desktop + touch/mobile layouts.
     local function xk_getViewport()
         local cam = workspace.CurrentCamera
         return cam and cam.ViewportSize or Vector2.new(1280, 720)
     end
+    local function xk_isMobileUI()
+        local vp = xk_getViewport()
+        return (cjcrem.TouchEnabled and vp.X <= 1000) or vp.X <= 700
+    end
     local function xk_isPortrait()
         local vp = xk_getViewport()
         return vp.Y >= vp.X
-    end
-    -- Mobile portrait uses compact navigation; mobile landscape intentionally keeps
-    -- the exact desktop-style sidebar/content composition, only scaled to fit.
-    local function xk_isMobileUI()
-        local vp = xk_getViewport()
-        return xk_isPortrait() and (cjcrem.TouchEnabled or vp.X <= 700)
-    end
-    local function xk_isTouchLandscape()
-        local vp = xk_getViewport()
-        return cjcrem.TouchEnabled and vp.X > vp.Y
     end
     local function xk_layoutMetrics()
         local vp = xk_getViewport()
@@ -606,17 +601,15 @@ AbyssDodge = true, ESPName = true, ESPHealthBar = true, ESPDistance = true, ESPS
             local top = 54
             local dock = 56
             local h = math.floor(math.clamp(vp.Y - math.max(16, margin * 2), 360, 820))
-            h = math.min(h, math.floor(vp.Y * 0.92))
+            if xk_isPortrait() then
+                h = math.min(h, math.floor(vp.Y * 0.92))
+            else
+                h = math.min(h, math.floor(vp.Y * 0.94))
+            end
             return {width = w, height = h, margin = margin, header = top, dock = dock}
         end
-        if xk_isTouchLandscape() then
-            -- Landscape touch uses the same PC master composition.
-            -- 1280x720 preserves the intended widescreen desktop proportions;
-            -- UIScale then fits that master canvas to the actual device viewport.
-            return {width = 1280, height = 720, margin = 8, header = 54, dock = 0}
-        end
-        local w = math.floor(math.clamp(vp.X * 0.78, 700, 980))
-        local h = math.floor(math.clamp(vp.Y * 0.78, 470, 700))
+        local w = math.floor(math.clamp(vp.X * 0.72, 680, 900))
+        local h = math.floor(math.clamp(vp.Y * 0.72, 430, 620))
         return {width = w, height = h, margin = 18, header = 54, dock = 0}
     end
     local function xk_isPointerBegin(input)
@@ -628,39 +621,6 @@ AbyssDodge = true, ESPName = true, ESPHealthBar = true, ESPDistance = true, ESPS
     local function xk_isPointerMove(input)
         return input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch
     end
-    local xk_touchMoved = false
-    local xk_touchStart = nil
-    local xk_touchCancelUntil = 0
-    local xk_touchGuardEnabled = true
-    local xk_touchThreshold = 12
-    local xk_touchActiveInput = nil
-    local function xk_touchTapAllowed()
-        if not cjcrem.TouchEnabled or not xk_touchGuardEnabled then
-            return true
-        end
-        if xk_touchMoved or tick() < xk_touchCancelUntil then
-            return false
-        end
-        return true
-    end
-    tuyxyk(cjcrem.TouchStarted:Connect(function(input)
-        xk_touchStart = input.Position
-        xk_touchActiveInput = input
-        xk_touchMoved = false
-    end))
-    tuyxyk(cjcrem.TouchMoved:Connect(function(input)
-        if xk_touchStart and (input.Position - xk_touchStart).Magnitude >= xk_touchThreshold then
-            xk_touchMoved = true
-        end
-    end))
-    tuyxyk(cjcrem.TouchEnded:Connect(function()
-        if xk_touchMoved then
-            xk_touchCancelUntil = tick() + 0.20
-        end
-        xk_touchStart = nil
-        xk_touchActiveInput = nil
-        task.delay(0.26, function() xk_touchMoved = false end)
-    end))
     _G.__ZINKA_MOBILE_UI = xk_isMobileUI()
     if _G.__ZINKA_MOBILE_UI then
         rxxvgn.Title = 18
@@ -987,20 +947,17 @@ then
     local zuiMetrics = xk_layoutMetrics()
     nkdodd.Size = UDim2.fromOffset(zuiMetrics.width, zuiMetrics.height);
     nkdodd.SizeConstraint = Enum.SizeConstraint.RelativeXY
-    nkdodd.BackgroundColor3 = Color3.fromRGB(15, 15, 21)
+    nkdodd.BackgroundColor3 = Color3.fromRGB(8, 22, 38)
     nkdodd.BorderSizePixel = 0;
     nkdodd.ClipsDescendants = true;
     nkdodd.Parent = mupnyu
     nkdodd.Active = true
-    local zGuiScale = Instance.new("UIScale")
-    zGuiScale.Scale = 1
-    zGuiScale.Parent = nkdodd
-    pzqwiv(nkdodd, 6)
+    pzqwiv(nkdodd, 10)
     local zminmax = Instance.new("UISizeConstraint")
     zminmax.MinSize = Vector2.new(286, 320)
     zminmax.MaxSize = Vector2.new(1000, 820)
     zminmax.Parent = nkdodd
-    local hztwao = czcxwg(nkdodd, Color3.fromRGB(70, 68, 86), 1, 0.25)
+    local hztwao = czcxwg(nkdodd, Color3.fromRGB(21, 117, 190), 1.2, 0.12)
     hztwao.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     local oxusxa = nil
     local yejkel = Instance.new("ImageLabel")
@@ -1023,37 +980,37 @@ then
     rzhjgz.Parent = nkdodd
     pzqwiv(rzhjgz, 6)
     local beiugl = Instance.new("Frame")
-    beiugl.Size = UDim2.new(1, 0, 0, 54);
-    beiugl.BackgroundColor3 = Color3.fromRGB(12, 12, 18);
+    beiugl.Size = UDim2.new(1, 0, 0, 48);
+    beiugl.BackgroundColor3 = Color3.fromRGB(7, 28, 50);
     beiugl.BorderSizePixel = 0;
     beiugl.Parent = nkdodd
     local mmdvzu = Instance.new("Frame");
-    mmdvzu.Size = UDim2.new(1, 0, 0, 16);
-    mmdvzu.Position = UDim2.new(0, 0, 1, - 16)
+    mmdvzu.Size = UDim2.new(1, 0, 0, 12);
+    mmdvzu.Position = UDim2.new(0, 0, 1, - 12)
     mmdvzu.BackgroundColor3 = beiugl.BackgroundColor3;
     mmdvzu.BorderSizePixel = 0;
     mmdvzu.Parent = beiugl
-    pzqwiv(beiugl, 6)
+    pzqwiv(beiugl, 10)
     local tpbrop = Instance.new("TextLabel")
     tpbrop.BackgroundTransparency = 1;
-    tpbrop.Position = UDim2.fromOffset(20, 6);
-    tpbrop.Size = UDim2.fromOffset(300, 22)
+    tpbrop.Position = UDim2.fromOffset(18, 8);
+    tpbrop.Size = UDim2.fromOffset(78, 22)
     tpbrop.Font = mgaaxo.Title;
     tpbrop.Text = "ZINKA";
-    tpbrop.TextSize = rxxvgn.Title;
+    tpbrop.TextSize = 16;
     tpbrop.TextXAlignment = Enum.TextXAlignment.Left
     tpbrop.TextYAlignment = Enum.TextYAlignment.Top
-    tpbrop.TextColor3 = Color3.fromRGB(228, 226, 236);
+    tpbrop.TextColor3 = Color3.fromRGB(230, 246, 255);
     tpbrop.ZIndex = 3;
     tpbrop.Parent = beiugl
     local fwherj = Instance.new("TextLabel")
     fwherj.BackgroundTransparency = 1;
-    fwherj.Position = UDim2.fromOffset(24, 34);
-    fwherj.Size = UDim2.fromOffset(300, 14)
+    fwherj.Position = UDim2.fromOffset(96, 10);
+    fwherj.Size = UDim2.fromOffset(220, 18)
     fwherj.Font = mgaaxo.Soft;
-    fwherj.Text = "v4  " .. tostring(_G.ZINKA_KEY) .. " / Insert";
-    fwherj.TextSize = rxxvgn.Small
-    fwherj.TextColor3 = jsbusx.Dim;
+    fwherj.Text = "Play Smarter, Not Harder";
+    fwherj.TextSize = 9
+    fwherj.TextColor3 = Color3.fromRGB(108, 157, 196);
     fwherj.TextStrokeColor3 = Color3.fromRGB(8, 8, 12);
     fwherj.TextStrokeTransparency = 0.4
     fwherj.TextXAlignment = Enum.TextXAlignment.Left;
@@ -1062,7 +1019,7 @@ then
     local amdbtm = Instance.new("TextButton")
     amdbtm.Size = UDim2.fromOffset(30, 30);
     amdbtm.Position = UDim2.new(1, - 78, 0.5, - 15)
-    amdbtm.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+    amdbtm.BackgroundColor3 = Color3.fromRGB(17, 91, 154)
     amdbtm.Text = "";
     amdbtm.AutoButtonColor = false;
     amdbtm.ZIndex = 3;
@@ -1076,8 +1033,7 @@ then
     bykexm.Image = "rbxassetid://12025413634";
     bykexm.ZIndex = 4;
     bykexm.Parent = amdbtm
-    amdbtm.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+    amdbtm.MouseButton1Click:Connect(function ()
         local fhdasw = (getgenv and getgenv()) or _G
         local pfgvtv = fhdasw.__ZINKA_DISCORD or fhdasw.__RN_DISCORD or _G.__ZINKA_DISCORD or _G.__RN_DISCORD
         local xiywrb = false
@@ -1100,7 +1056,7 @@ then
     local fkzxbp = Instance.new("TextButton")
     fkzxbp.Size = UDim2.fromOffset(30, 30);
     fkzxbp.Position = UDim2.new(1, - 40, 0.5, - 15);
-    fkzxbp.BackgroundColor3 = Color3.fromRGB(30, 28, 40)
+    fkzxbp.BackgroundColor3 = Color3.fromRGB(12, 43, 70)
     fkzxbp.Text = "\195\151";
     fkzxbp.Font = mgaaxo.Head;
     fkzxbp.TextSize = 18;
@@ -1132,9 +1088,9 @@ then
         end))
     end)()
     local khtsym = Instance.new("ScrollingFrame")
-    khtsym.Position = UDim2.fromOffset(0, 54);
+    khtsym.Position = UDim2.fromOffset(0, 48);
     khtsym.Size = UDim2.fromOffset(156, 416)
-    khtsym.BackgroundColor3 = Color3.fromRGB(13, 13, 19);
+    khtsym.BackgroundColor3 = Color3.fromRGB(7, 25, 43);
     khtsym.BorderSizePixel = 0;
     khtsym.Parent = nkdodd
     khtsym.CanvasSize = UDim2.new();
@@ -1147,33 +1103,33 @@ then
     khtsym.Active = true;
     khtsym.ClipsDescendants = true
     local qnrwwj = Instance.new("UIListLayout");
-    qnrwwj.Padding = UDim.new(0, 6);
+    qnrwwj.Padding = UDim.new(0, 4);
     qnrwwj.SortOrder = Enum.SortOrder.LayoutOrder;
     qnrwwj.Parent = khtsym
     local qxhees = Instance.new("UIPadding");
-    qxhees.PaddingTop = UDim.new(0, 14);
-    qxhees.PaddingBottom = UDim.new(0, 14);
-    qxhees.PaddingLeft = UDim.new(0, 11);
-    qxhees.PaddingRight = UDim.new(0, 9);
+    qxhees.PaddingTop = UDim.new(0, 10);
+    qxhees.PaddingBottom = UDim.new(0, 10);
+    qxhees.PaddingLeft = UDim.new(0, 8);
+    qxhees.PaddingRight = UDim.new(0, 8);
     qxhees.Parent = khtsym
     local mdwekd = Instance.new("Frame")
-    mdwekd.Position = UDim2.fromOffset(156, 54);
+    mdwekd.Position = UDim2.fromOffset(156, 48);
     mdwekd.Size = UDim2.fromOffset(544, 416);
     mdwekd.BackgroundTransparency = 1;
     mdwekd.ClipsDescendants = true;
     mdwekd.Parent = nkdodd
     local tfjkcx = Instance.new("Frame")
     tfjkcx.Name = "ZHeadRule";
-    tfjkcx.Position = UDim2.fromOffset(0, 53);
+    tfjkcx.Position = UDim2.fromOffset(0, 47);
     tfjkcx.Size = UDim2.new(1, 0, 0, 1)
     tfjkcx.BackgroundColor3 = jnwhbe;
-    tfjkcx.BackgroundTransparency = 0.55;
+    tfjkcx.BackgroundTransparency = 0.35;
     tfjkcx.BorderSizePixel = 0
     tfjkcx.ZIndex = 4;
     tfjkcx.Parent = nkdodd
     local bodoox = Instance.new("Frame")
     bodoox.Name = "ZSideRule";
-    bodoox.Position = UDim2.fromOffset(156, 54);
+    bodoox.Position = UDim2.fromOffset(156, 48);
     bodoox.Size = UDim2.fromOffset(1, 416)
     bodoox.BackgroundColor3 = jnwhbe;
     bodoox.BackgroundTransparency = 0.7;
@@ -1196,38 +1152,33 @@ then
                 nkdodd.Position = UDim2.fromScale(0.5, 0.5)
             end
             local dphucf = mobile and 0 or math.clamp(math.floor(crtubb * 0.22), 130, 210)
-            local contentTop = 54
+            local contentTop = mobile and 54 or 48
             local dockH = mobile and 56 or 0
             local contentH = math.max(rggpvr - contentTop - dockH, 240)
-            local touchLandscape = xk_isTouchLandscape()
-            local desktopNav = not mobile or touchLandscape
-            if touchLandscape then
-                dphucf = math.clamp(math.floor(crtubb * 0.22), 132, 205)
-            end
-            khtsym.Visible = desktopNav
+            khtsym.Visible = not mobile
             khtsym.Position = UDim2.fromOffset(0, contentTop)
             khtsym.Size = UDim2.fromOffset(dphucf, math.max(rggpvr - contentTop, 0))
             mdwekd.Position = UDim2.fromOffset(dphucf, contentTop)
             mdwekd.Size = UDim2.fromOffset(math.max(crtubb - dphucf, 0), contentH)
-            bodoox.Visible = desktopNav
+            bodoox.Visible = not mobile
             bodoox.Position = UDim2.fromOffset(dphucf, contentTop)
             bodoox.Size = UDim2.fromOffset(1, math.max(contentH, 0))
             if mobileDock then
-                mobileDock.Visible = mobile and not touchLandscape
+                mobileDock.Visible = mobile
                 mobileDock.Position = UDim2.new(0, 0, 1, -dockH)
                 mobileDock.Size = UDim2.new(1, 0, 0, dockH)
             end
             if bbaemv then
-                bbaemv.Visible = not mobile or touchLandscape
+                bbaemv.Visible = not mobile
             end
             if tpbrop then
-                tpbrop.Position = UDim2.fromOffset(mobile and 14 or 20, 5)
+                tpbrop.Position = UDim2.fromOffset(mobile and 14 or 18, mobile and 5 or 8)
                 tpbrop.Size = UDim2.new(1, mobile and -120 or -170, 0, 24)
             end
             if fwherj then
-                fwherj.Position = UDim2.fromOffset(mobile and 18 or 24, 32)
-                fwherj.Size = UDim2.new(1, mobile and -120 or -170, 0, 14)
-                fwherj.Text = mobile and "Touch UI  •  drag header to move" or ("v4  " .. tostring(_G.ZINKA_KEY) .. " / Insert")
+                fwherj.Position = UDim2.fromOffset(mobile and 18 or 96, mobile and 32 or 10)
+                fwherj.Size = UDim2.new(1, mobile and -120 or -170, 0, 18)
+                fwherj.Text = mobile and "Touch UI  •  drag header to move" or "Play Smarter, Not Harder"
             end
             local headerBtn = mobile and 38 or 30
             amdbtm.Size = UDim2.fromOffset(headerBtn, headerBtn)
@@ -1255,35 +1206,12 @@ then
                     btn.Size = UDim2.new(1, 0, 0, mobile and 48 or 36)
                 end
                 if entry.tl then
-                    entry.tl.Visible = not mobile or touchLandscape
+                    entry.tl.Visible = not mobile
                 end
                 if entry.ind then
                     entry.ind.Size = UDim2.fromOffset(3, mobile and 24 or 20)
                 end
             end
-
-            -- Hard-normalize page child width after every viewport/root resize.
-            -- This prevents legacy fixed-width controls from leaving a large empty
-            -- right-hand area on landscape mobile.
-            for _, page in ipairs(uetupc) do
-                if page and page:IsA("ScrollingFrame") then
-                    page.Size = UDim2.fromScale(1, 1)
-                    for _, child in ipairs(page:GetChildren()) do
-                        if child:IsA("Frame") or child:IsA("TextButton") or child:IsA("TextLabel") or
-                           child:IsA("ImageButton") or child:IsA("ImageLabel") then
-                            -- Keep the child's local Y sizing intact; only normalize X.
-                            -- Using Scale=1 avoids UIScale-dependent pixel math and guarantees
-                            -- that rows occupy the entire page width.
-                            local yScale = child.Size.Y.Scale
-                            local yOffset = child.Size.Y.Offset
-                            if child.Size.X.Scale ~= 1 or child.Size.X.Offset ~= 0 then
-                                child.Size = UDim2.new(1, 0, yScale, yOffset)
-                            end
-                        end
-                    end
-                end
-            end
-
             if mobileDock then
                 for _, child in ipairs(mobileDock:GetChildren()) do
                     if child:IsA("TextButton") then
@@ -1294,29 +1222,6 @@ then
         end
         _G.__ZINKA_RELAYOUT = daejly
         tuyxyk(nkdodd:GetPropertyChangedSignal("Size"):Connect(daejly))
-        tuyxyk(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-            local cam = workspace.CurrentCamera
-            if cam then
-                tuyxyk(cam:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-                    pcall(daejly)
-                    if type(_G.__ZINKA_APPLY_GUI_SCALE) == "function" then
-                        pcall(_G.__ZINKA_APPLY_GUI_SCALE)
-                    end
-                end))
-            end
-            pcall(daejly)
-        end))
-        do
-            local cam = workspace.CurrentCamera
-            if cam then
-                tuyxyk(cam:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-                    pcall(daejly)
-                    if type(_G.__ZINKA_APPLY_GUI_SCALE) == "function" then
-                        pcall(_G.__ZINKA_APPLY_GUI_SCALE)
-                    end
-                end))
-            end
-        end
         task.defer(daejly)
         bbaemv = Instance.new("TextButton")
         bbaemv.Name = "ZResize";
@@ -1369,7 +1274,7 @@ then
             _G.__ZINKA_MENUSIZE = nkdodd.Size
         end))
     end)()
-    hcgxpv = {"ESP", "Aim", "Survivor", "Killer", "Movement", "Auto Farm", "Visuals", "Misc", "Fun", "Configs", "GUI"}
+    hcgxpv = {"ESP", "Aim", "Survivor", "Killer", "Movement", "Auto Farm", "Visuals", "Misc", "Fun", "Configs"}
     local function crebca(aqwmpo, afpzxt)
         local blqrij = Instance.new("Frame")
         blqrij.BackgroundTransparency = 1;
@@ -1511,11 +1416,6 @@ then
             drrrnf(dgogze.Position)
         end
     end))
-    tuyxyk(cjcrem.TouchMoved:Connect(function (input)
-        if drrrnf then
-            drrrnf(input.Position)
-        end
-    end))
     local function noojjl(norfal, eawlka)
         local olbvfb = Instance.new("TextLabel");
         olbvfb.BackgroundTransparency = 1;
@@ -1630,8 +1530,7 @@ then
         gkfshc.MouseLeave:Connect(function ()
             hgwovb(rjudsr, {BackgroundColor3 = hzowxr.Row}, 0.15):Play()
         end)
-        gkfshc.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        gkfshc.MouseButton1Click:Connect(function ()
             if not obnyuz() then
                 vfqnkp("[ZINKA] blocked toggle (auth): " .. tostring(bnofqr))
                 return
@@ -1662,8 +1561,7 @@ then
         jjjger.MouseLeave:Connect(function ()
             hgwovb(jjjger, {BackgroundColor3 = hzowxr.Btn}, 0.15):Play()
         end)
-        jjjger.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        jjjger.MouseButton1Click:Connect(function ()
             if not obnyuz() then
                 vfqnkp("[ZINKA] blocked button (auth): " .. tostring(amnckp))
                 return
@@ -1969,8 +1867,7 @@ then
                 kkhpxd.Parent = qchteg;
                 pzqwiv(kkhpxd, 4)
                 bvhhgm[lffoxf] = kkhpxd
-                kkhpxd.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+                kkhpxd.MouseButton1Click:Connect(function ()
                     if ajxxux then
                         atsmyu[fosdpl] = atsmyu[fosdpl] or {}
                         atsmyu[fosdpl][lffoxf] = not atsmyu[fosdpl][lffoxf] or nil
@@ -1993,8 +1890,7 @@ then
                 acqcci(atsmyu[fosdpl])
             end
         end)
-        ktarlg.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        ktarlg.MouseButton1Click:Connect(function ()
             if not qchteg.Visible then
                 ucauwv()
             end
@@ -2145,8 +2041,7 @@ then
             jkmbqb(nnkalr.Position)
         end
     end)
-    ynyuup.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+    ynyuup.MouseButton1Click:Connect(function ()
         iusokc.Visible = false;
         mopiom, qzflbb, qligjc = nil, nil, nil
     end)
@@ -2323,8 +2218,7 @@ or "")
                 tajbij(atsmyu[pfkoar])
             end
         end)
-        blelwm.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        blelwm.MouseButton1Click:Connect(function ()
             zkbnou = iqfmrv;
             blelwm.Text = "press key"
         end)
@@ -2396,8 +2290,7 @@ or "")
         xevcek("bind", clrnkv, function ()
             gklxhx()
         end)
-        wvvyqq.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        wvvyqq.MouseButton1Click:Connect(function ()
             zkbnou = clrnkv;
             wvvyqq.Text = "press a key"
         end)
@@ -2445,8 +2338,7 @@ or "")
         zkiluc.BackgroundTransparency = 1;
         zkiluc.Text = "";
         zkiluc.Parent = soruzp
-        zkiluc.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        zkiluc.MouseButton1Click:Connect(function ()
             mopiom, qzflbb, qligjc = rzewwr, pybave, ghwpjd
             qdnick, rojung, gieoxy = atsmyu[rzewwr]:ToHSV()
             ddhvzm(false)
@@ -2540,8 +2432,7 @@ or "")
         kkaqul(vdudfa == 1 and jnwhbe or Color3.fromRGB(155, 155, 180))
         wazuxk[vdudfa] = {btn = prghhv, paint = kkaqul, tl = ongjzu, ind = mmhuzq};
         uetupc[vdudfa] = cdezvk
-        prghhv.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        prghhv.MouseButton1Click:Connect(function ()
             zSelectTab(vdudfa)
         end)
     end
@@ -2549,7 +2440,7 @@ or "")
     mobileDock.Name = "ZMobileDock"
     mobileDock.Position = UDim2.new(0, 0, 1, -56)
     mobileDock.Size = UDim2.new(1, 0, 0, 56)
-    mobileDock.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+    mobileDock.BackgroundColor3 = Color3.fromRGB(7, 25, 43)
     mobileDock.BorderSizePixel = 0
     mobileDock.ScrollBarThickness = 0
     mobileDock.ScrollingDirection = Enum.ScrollingDirection.X
@@ -2590,8 +2481,7 @@ or "")
         b.ZIndex = 51
         b.Parent = mobileDock
         pzqwiv(b, 10)
-        b.Activated:Connect(function()
-            if not xk_touchTapAllowed() then return end
+        b.MouseButton1Click:Connect(function()
             zSelectTab(index)
         end)
     end
@@ -12528,8 +12418,7 @@ nsyccw then
                     eexste.Text = "FLING";
                     eexste.Parent = lzungn;
                     pzqwiv(eexste, 5)
-                    lzungn.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+                    lzungn.MouseButton1Click:Connect(function ()
                         zixidc(vkfbsj)
                     end)
                 end
@@ -14470,18 +14359,16 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
         noojjl(jmjevx, "Menu")
         local spozkj = pybzfq(jmjevx, xk_isMobileUI() and "Menu: use the Z button" or ("Menu keybind:  " .. tostring(_G.ZINKA_KEY) .. "   (click to rebind)"), nil)
         local huvtrs = false
-        spozkj.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        spozkj.MouseButton1Click:Connect(function ()
             huvtrs = true;
             spozkj.Text = "press any key"
         end)
         local function juieee()
-            local m = xk_layoutMetrics()
-            -- Never reuse stale menu dimensions on landscape touch; doing so was
-            -- the main reason the UI kept reopening at the old 900x600 canvas.
-            if xk_isTouchLandscape() or xk_isMobileUI() then
+            if xk_isMobileUI() then
+                local m = xk_layoutMetrics()
                 return UDim2.fromOffset(m.width, m.height)
             end
+            local m = xk_layoutMetrics()
             return _G.__ZINKA_MENUSIZE or UDim2.fromOffset(m.width, m.height)
         end
         local function pdofxh()
@@ -14545,8 +14432,7 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
         pzqwiv(zmob, 14)
         czcxwg(zmob, jnwhbe, 1.2, 0.2)
         zmob.Visible = xk_isMobileUI() and not nkdodd.Visible
-        zmob.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+        zmob.MouseButton1Click:Connect(function ()
             lukedl()
         end)
         local lastMobileW, lastMobileH = 0, 0
@@ -14632,7 +14518,7 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
                 _G.ZINKA_KEY = lizhqj.KeyCode.Name;
                 huvtrs = false
                 spozkj.Text = "menu key:  " .. _G.ZINKA_KEY
-                fwherj.Text = "v2  " .. _G.ZINKA_KEY .. " / Insert"
+                fwherj.Text = "Play Smarter, Not Harder"
                 return
             end
             if huvtrs then
@@ -14989,8 +14875,7 @@ hvriwi)
                     rpvfuy.TextColor3 = (cskoem == zsomsu) and jnwhbe or Color3.fromRGB(190, 190, 215)
                     rpvfuy.Parent = dxwyse;
                     pzqwiv(rpvfuy, 4)
-                    rpvfuy.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+                    rpvfuy.MouseButton1Click:Connect(function ()
                         zsomsu = cskoem
                         if bpkbfb then
                             bpkbfb.Text = cskoem
@@ -15316,8 +15201,7 @@ hvriwi)
                     iqgwft.TextColor3 = kpbldz and jnwhbe or Color3.fromRGB(190, 190, 215)
                     iqgwft.Parent = edxujm;
                     pzqwiv(iqgwft, 4)
-                    iqgwft.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+                    iqgwft.MouseButton1Click:Connect(function ()
                         atsmyu.BgImage = kzqxrs.name
                         kdfili()
                         huapgx()
@@ -15386,7 +15270,7 @@ hvriwi)
             aupgzi.Position = UDim2.new(1, - 18, 0, 120)
             aupgzi.Size = UDim2.fromOffset(212, 0);
             aupgzi.AutomaticSize = Enum.AutomaticSize.Y
-            aupgzi.BackgroundColor3 = Color3.fromRGB(15, 15, 21);
+            aupgzi.BackgroundColor3 = Color3.fromRGB(8, 22, 38);
             aupgzi.BackgroundTransparency = 0.08
             aupgzi.BorderSizePixel = 0;
             aupgzi.Visible = false;
@@ -15757,266 +15641,6 @@ and Color3.fromRGB(120, 235, 150) or Color3.fromRGB(90, 90, 115)
             tuyxyk(shwkdl.WindowFocusReleased:Connect(atijtu))
         end
     end
-    -- GUI settings: Dark Glass landscape master layout, touch safety, device presets and persistence.
-    do
-        local guiPage = uetupc[11]
-        noojjl(guiPage, "Device & Touch")
-        bwhepy(guiPage, "Landscape keeps the same PC layout. Only scale, spacing and touch protection adapt to the screen.")
-
-        local guiPreset = "Auto"
-        local guiScale = 1
-        local guiTouch = 1.18
-        local guiGap = 1
-        local guiGuard = true
-        local guiPath = "ZINKA_cfg/GUI_Settings.txt"
-        local guiSaveQueued = false
-
-        local guiProfiles = {
-            ["Auto"] = {scale = 1.00, touch = 1.18, gap = 1.00},
-            ["Small Phone Landscape"] = {scale = 0.96, touch = 1.32, gap = 0.90},
-            ["Large Phone Landscape"] = {scale = 1.00, touch = 1.24, gap = 0.95},
-            ["Tablet Landscape"] = {scale = 1.00, touch = 1.16, gap = 1.00},
-            ["Manual"] = {scale = 1.00, touch = 1.18, gap = 1.00},
-        }
-
-        local function guiDetectProfile()
-            local vp = xk_getViewport()
-            if not xk_isTouchLandscape() then
-                return "Auto"
-            end
-            local shortSide = math.min(vp.X, vp.Y)
-            if shortSide <= 480 then
-                return "Small Phone Landscape"
-            elseif shortSide <= 700 then
-                return "Large Phone Landscape"
-            end
-            return "Tablet Landscape"
-        end
-
-        local function guiSanitizePreset(v)
-            v = tostring(v or "Auto")
-            if v == "Auto" or v == "Small Phone Landscape" or v == "Large Phone Landscape" or v == "Tablet Landscape" or v == "Manual" then
-                return v
-            end
-            return "Auto"
-        end
-
-        local function guiApply()
-            local vp = xk_getViewport()
-            guiPreset = guiSanitizePreset(guiPreset)
-            if guiPreset == "Auto" then
-                local detected = guiDetectProfile()
-                local profile = guiProfiles[detected] or guiProfiles.Auto
-                guiScale, guiTouch, guiGap = profile.scale, profile.touch, profile.gap
-                nkdodd:SetAttribute("DetectedDeviceProfile", detected)
-            else
-                local profile = guiProfiles[guiPreset] or guiProfiles.Manual
-                if guiPreset ~= "Manual" then
-                    guiScale, guiTouch, guiGap = profile.scale, profile.touch, profile.gap
-                end
-            end
-
-            guiScale = math.clamp(tonumber(guiScale) or 1, 0.70, 1.15)
-            guiTouch = math.clamp(tonumber(guiTouch) or 1.18, 1.00, 1.50)
-            guiGap = math.clamp(tonumber(guiGap) or 1, 0.75, 1.25)
-            local effectiveTouch = cjcrem.TouchEnabled and guiTouch or 1
-            xk_touchGuardEnabled = (cjcrem.TouchEnabled and guiGuard) and true or false
-            xk_touchThreshold = math.clamp(math.floor(12 / math.max(effectiveTouch, 0.75) + 0.5), 7, 18)
-            _G.__ZINKA_SCROLL_GUARD = xk_touchGuardEnabled
-
-            if xk_isTouchLandscape() then
-                -- Stable 1280x720 master canvas: exact PC composition, scaled to device.
-                local master = xk_layoutMetrics()
-                nkdodd.Size = UDim2.fromOffset(master.width, master.height)
-                local fit = math.min(
-                    math.max((vp.X - 16) / master.width, 0.01),
-                    math.max((vp.Y - 16) / master.height, 0.01)
-                )
-                -- 94% baseline gives a small safety margin for system insets;
-                -- manual UI scale can grow/shrink inside that available space.
-                local finalScale = math.min(fit, fit * 0.94 * guiScale)
-                zGuiScale.Scale = math.clamp(finalScale, 0.55, math.max(fit, 0.55))
-            elseif xk_isMobileUI() then
-                local metrics = xk_layoutMetrics()
-                nkdodd.Size = UDim2.fromOffset(metrics.width, metrics.height)
-                zGuiScale.Scale = guiScale
-            else
-                local metrics = xk_layoutMetrics()
-                nkdodd.Size = UDim2.fromOffset(metrics.width, metrics.height)
-                zGuiScale.Scale = guiScale
-            end
-
-            _G.__ZINKA_GUI_PREFS = {
-                preset = guiPreset,
-                scale = guiScale,
-                touch = effectiveTouch,
-                gap = guiGap,
-                guard = guiGuard,
-                threshold = xk_touchThreshold,
-            }
-            nkdodd:SetAttribute("GuiScale", zGuiScale.Scale)
-            nkdodd:SetAttribute("TouchMultiplier", effectiveTouch)
-            nkdodd:SetAttribute("ControlGap", guiGap)
-            nkdodd:SetAttribute("ScrollGuard", guiGuard)
-            nkdodd:SetAttribute("TouchThreshold", xk_touchThreshold)
-
-            -- Scale hit targets only. The visual PC/mobile-landscape composition remains unchanged.
-            for _, obj in ipairs(mdwekd:GetDescendants()) do
-                if obj:IsA("TextButton") and obj.Size.Y.Scale == 0 then
-                    local baseY = obj:GetAttribute("ZBaseHeight")
-                    if baseY == nil then
-                        baseY = obj.Size.Y.Offset
-                        obj:SetAttribute("ZBaseHeight", baseY)
-                    end
-                    local y = math.clamp(math.floor(baseY * effectiveTouch + 0.5), 26, 76)
-                    obj.Size = UDim2.new(obj.Size.X.Scale, obj.Size.X.Offset, 0, y)
-                end
-            end
-            for _, obj in ipairs(mdwekd:GetDescendants()) do
-                if obj:IsA("UIListLayout") then
-                    local baseGap = obj:GetAttribute("ZBaseGap")
-                    if baseGap == nil then
-                        baseGap = obj.Padding.Offset
-                        obj:SetAttribute("ZBaseGap", baseGap)
-                    end
-                    obj.Padding = UDim.new(0, math.max(2, math.floor(baseGap * guiGap + 0.5)))
-                end
-            end
-            pcall(function()
-                if _G.__ZINKA_RELAYOUT then _G.__ZINKA_RELAYOUT() end
-            end)
-        end
-        _G.__ZINKA_APPLY_GUI_SCALE = guiApply
-
-        local function guiSerialize()
-            return table.concat({
-                "v2",
-                guiPreset,
-                tostring(guiScale),
-                tostring(guiTouch),
-                tostring(guiGap),
-                guiGuard and "1" or "0",
-            }, "\n")
-        end
-
-        local function guiSave()
-            local data = guiSerialize()
-            _G.__ZINKA_GUI_SETTINGS_TEXT = data
-            if typeof(writefile) == "function" then
-                pcall(function()
-                    if typeof(makefolder) == "function" then
-                        local folderExists = typeof(isfolder) == "function" and isfolder("ZINKA_cfg") or false
-                        if not folderExists then
-                            pcall(makefolder, "ZINKA_cfg")
-                        end
-                    end
-                    writefile(guiPath, data)
-                end)
-            end
-            guiSaveQueued = false
-        end
-
-        local function guiQueueSave()
-            if guiSaveQueued then return end
-            guiSaveQueued = true
-            task.delay(0.45, function()
-                if fordjx() then
-                    guiSave()
-                end
-            end)
-        end
-
-        local function guiLoad()
-            local data
-            if typeof(readfile) == "function" and typeof(isfile) == "function" then
-                pcall(function()
-                    if isfile(guiPath) then
-                        data = readfile(guiPath)
-                    end
-                end)
-            end
-            data = data or _G.__ZINKA_GUI_SETTINGS_TEXT
-            if data then
-                local lines = {}
-                for line in tostring(data):gmatch("[^\r\n]+") do
-                    lines[#lines + 1] = line
-                end
-                -- v1 compatibility: v1 had preset/scale/touch/scroll/gap.
-                if lines[1] == "v1" then
-                    guiPreset = guiSanitizePreset(lines[2])
-                    guiScale = tonumber(lines[3]) or guiScale
-                    guiTouch = tonumber(lines[4]) or guiTouch
-                    guiGap = tonumber(lines[6]) or guiGap
-                else
-                    guiPreset = guiSanitizePreset(lines[2])
-                    guiScale = tonumber(lines[3]) or guiScale
-                    guiTouch = tonumber(lines[4]) or guiTouch
-                    guiGap = tonumber(lines[5]) or guiGap
-                    guiGuard = lines[6] ~= "0"
-                end
-            end
-            atsmyu.__GuiDevicePreset = guiPreset
-            atsmyu.__GuiScale = guiScale
-            atsmyu.__GuiTouch = guiTouch
-            atsmyu.__GuiGap = guiGap
-            atsmyu.__GuiScrollGuard = guiGuard
-            guiApply()
-            twzpud(false)
-        end
-
-        local presetOptions = {"Auto", "Small Phone Landscape", "Large Phone Landscape", "Tablet Landscape", "Manual"}
-        atsmyu.__GuiDevicePreset = guiPreset
-        ghjovk(guiPage, "Device profile", "__GuiDevicePreset", presetOptions, false, function(v)
-            guiPreset = guiSanitizePreset(v)
-            guiApply()
-            guiQueueSave()
-        end)
-
-        noojjl(guiPage, "Display & Touch")
-        ixqzgp(guiPage, "UI scale", "__GuiScale", 0.70, 1.15, 2, function(v)
-            guiScale = tonumber(v) or guiScale
-            guiPreset = "Manual"
-            guiApply()
-            guiQueueSave()
-        end)
-        ixqzgp(guiPage, "Touch target", "__GuiTouch", 1.00, 1.50, 2, function(v)
-            guiTouch = tonumber(v) or guiTouch
-            guiPreset = "Manual"
-            guiApply()
-            guiQueueSave()
-        end)
-        ixqzgp(guiPage, "Control spacing", "__GuiGap", 0.75, 1.25, 2, function(v)
-            guiGap = tonumber(v) or guiGap
-            guiPreset = "Manual"
-            guiApply()
-            guiQueueSave()
-        end)
-
-        noojjl(guiPage, "Touch safety")
-        bfzoji(guiPage, "Scroll lock for taps", "__GuiScrollGuard", function(v)
-            guiGuard = v and true or false
-            atsmyu.__GuiScrollGuard = guiGuard
-            guiApply()
-            guiQueueSave()
-        end)
-        atsmyu.__GuiScrollGuard = guiGuard
-
-        noojjl(guiPage, "Configuration")
-        pybzfq(guiPage, "Save GUI settings", function() guiSave() end)
-        pybzfq(guiPage, "Load GUI settings", function() guiLoad() end)
-        pybzfq(guiPage, "Reset GUI settings", function()
-            guiPreset, guiScale, guiTouch, guiGap, guiGuard = "Auto", 1, 1.18, 1, true
-            atsmyu.__GuiDevicePreset = guiPreset
-            atsmyu.__GuiScale = guiScale
-            atsmyu.__GuiTouch = guiTouch
-            atsmyu.__GuiGap = guiGap
-            atsmyu.__GuiScrollGuard = guiGuard
-            guiApply()
-            guiSave()
-            twzpud(false)
-        end)
-        guiLoad()
-    end
     siacpy("menu", fsohrk)
     siacpy("configs", zncpsw)
     siacpy("hud", msvjfv)
@@ -16039,28 +15663,19 @@ and Color3.fromRGB(120, 235, 150) or Color3.fromRGB(90, 90, 115)
             end
         end
     end
-    fkzxbp.Activated:Connect(function ()
-            if not xk_touchTapAllowed() then return end
+    fkzxbp.MouseButton1Click:Connect(function ()
         pcall(dxwxnd)
     end)
-    local initialMenuMetrics = xk_layoutMetrics()
-    local initialMenuTarget = UDim2.fromOffset(initialMenuMetrics.width, initialMenuMetrics.height)
-    if not xk_isTouchLandscape() and not xk_isMobileUI() and _G.__ZINKA_MENUSIZE then
+    local initialMenuTarget = UDim2.fromOffset(zuiMetrics.width, zuiMetrics.height)
+    if xk_isMobileUI() then
+        local m = xk_layoutMetrics()
+        initialMenuTarget = UDim2.fromOffset(m.width, m.height)
+    elseif _G.__ZINKA_MENUSIZE then
         initialMenuTarget = _G.__ZINKA_MENUSIZE
     end
     nkdodd.Size = UDim2.fromOffset(initialMenuTarget.X.Offset, 0)
     hgwovb(nkdodd, {Size = initialMenuTarget}, 0.4, Enum.EasingStyle.Back):Play()
-    if not xk_isTouchLandscape() then
-        _G.__ZINKA_MENUSIZE = initialMenuTarget
-    end
-    pcall(function()
-        if type(_G.__ZINKA_APPLY_GUI_SCALE) == "function" then
-            _G.__ZINKA_APPLY_GUI_SCALE()
-        end
-        if type(_G.__ZINKA_RELAYOUT) == "function" then
-            _G.__ZINKA_RELAYOUT()
-        end
-    end)
+    _G.__ZINKA_MENUSIZE = initialMenuTarget
     task.defer(function ()
         if not fordjx() then
             return
