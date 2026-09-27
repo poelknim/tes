@@ -579,10 +579,37 @@ AbyssDodge = true, ESPName = true, ESPHealthBar = true, ESPDistance = true, ESPS
      Btn = Color3.fromRGB(30, 28, 44), BtnHov = Color3.fromRGB(44, 40, 64), Track = Color3.fromRGB(45, 44, 58), Off = Color3.fromRGB(50,
           48, 62),}
     -- Responsive UI helpers: desktop + touch/mobile layouts.
-    local function xk_isMobileUI()
+    local function xk_getViewport()
         local cam = workspace.CurrentCamera
-        local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
-        return (cjcrem.TouchEnabled and vp.X <= 900) or vp.X <= 620
+        return cam and cam.ViewportSize or Vector2.new(1280, 720)
+    end
+    local function xk_isMobileUI()
+        local vp = xk_getViewport()
+        return (cjcrem.TouchEnabled and vp.X <= 1000) or vp.X <= 700
+    end
+    local function xk_isPortrait()
+        local vp = xk_getViewport()
+        return vp.Y >= vp.X
+    end
+    local function xk_layoutMetrics()
+        local vp = xk_getViewport()
+        local mobile = xk_isMobileUI()
+        if mobile then
+            local margin = math.clamp(math.floor(math.min(vp.X, vp.Y) * 0.025), 8, 18)
+            local w = math.floor(math.clamp(vp.X - margin * 2, 286, 760))
+            local top = 54
+            local dock = 56
+            local h = math.floor(math.clamp(vp.Y - math.max(16, margin * 2), 360, 820))
+            if xk_isPortrait() then
+                h = math.min(h, math.floor(vp.Y * 0.92))
+            else
+                h = math.min(h, math.floor(vp.Y * 0.94))
+            end
+            return {width = w, height = h, margin = margin, header = top, dock = dock}
+        end
+        local w = math.floor(math.clamp(vp.X * 0.78, 700, 980))
+        local h = math.floor(math.clamp(vp.Y * 0.78, 470, 700))
+        return {width = w, height = h, margin = 18, header = 54, dock = 0}
     end
     local function xk_isPointerBegin(input)
         return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
@@ -916,13 +943,19 @@ then
     nkdodd.AnchorPoint = Vector2.new(0.5, 0.5);
     nkdodd.Position = UDim2.fromScale(0.5,
 0.5)
-    nkdodd.Size = UDim2.fromOffset(700, 470);
+    local zuiMetrics = xk_layoutMetrics()
+    nkdodd.Size = UDim2.fromOffset(zuiMetrics.width, zuiMetrics.height);
+    nkdodd.SizeConstraint = Enum.SizeConstraint.RelativeXY
     nkdodd.BackgroundColor3 = Color3.fromRGB(15, 15, 21)
     nkdodd.BorderSizePixel = 0;
     nkdodd.ClipsDescendants = true;
     nkdodd.Parent = mupnyu
     nkdodd.Active = true
     pzqwiv(nkdodd, 6)
+    local zminmax = Instance.new("UISizeConstraint")
+    zminmax.MinSize = Vector2.new(286, 320)
+    zminmax.MaxSize = Vector2.new(1000, 820)
+    zminmax.Parent = nkdodd
     local hztwao = czcxwg(nkdodd, Color3.fromRGB(70, 68, 86), 1, 0.25)
     hztwao.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     local oxusxa = nil
@@ -1102,30 +1135,94 @@ then
     bodoox.BorderSizePixel = 0
     bodoox.ZIndex = 4;
     bodoox.Parent = nkdodd;
+    local mobileDock
+    local wazuxk, uetupc = {}, {}
+    local hcgxpv
     (function ()
         local dfiuej = Vector2.new(560, 340)
         local fensgq = Vector2.new(1400, 900)
+        local bbaemv
         local function daejly()
             local crtubb, rggpvr = nkdodd.AbsoluteSize.X, nkdodd.AbsoluteSize.Y
             local mobile = xk_isMobileUI()
             _G.__ZINKA_MOBILE_UI = mobile
-            local dphucf
-            bbaemv.Visible = not mobile
+            local metrics = xk_layoutMetrics()
             if mobile then
-                dphucf = math.clamp(math.floor(crtubb * 0.18), 58, 76)
-            else
-                dphucf = math.clamp(math.floor(crtubb * 0.22), 130, 210)
+                nkdodd.Position = UDim2.fromScale(0.5, 0.5)
             end
-            khtsym.Size = UDim2.fromOffset(dphucf, math.max(rggpvr - 54, 0))
-            mdwekd.Position = UDim2.fromOffset(dphucf, 54)
-            mdwekd.Size = UDim2.fromOffset(math.max(crtubb - dphucf, 0), math.max(rggpvr - 54, 0))
-            bodoox.Position = UDim2.fromOffset(dphucf, 54)
-            bodoox.Size = UDim2.fromOffset(1, math.max(rggpvr - 54, 0))
+            local dphucf = mobile and 0 or math.clamp(math.floor(crtubb * 0.22), 130, 210)
+            local contentTop = 54
+            local dockH = mobile and 56 or 0
+            local contentH = math.max(rggpvr - contentTop - dockH, 240)
+            khtsym.Visible = not mobile
+            khtsym.Position = UDim2.fromOffset(0, contentTop)
+            khtsym.Size = UDim2.fromOffset(dphucf, math.max(rggpvr - contentTop, 0))
+            mdwekd.Position = UDim2.fromOffset(dphucf, contentTop)
+            mdwekd.Size = UDim2.fromOffset(math.max(crtubb - dphucf, 0), contentH)
+            bodoox.Visible = not mobile
+            bodoox.Position = UDim2.fromOffset(dphucf, contentTop)
+            bodoox.Size = UDim2.fromOffset(1, math.max(contentH, 0))
+            if mobileDock then
+                mobileDock.Visible = mobile
+                mobileDock.Position = UDim2.new(0, 0, 1, -dockH)
+                mobileDock.Size = UDim2.new(1, 0, 0, dockH)
+            end
+            if bbaemv then
+                bbaemv.Visible = not mobile
+            end
+            if tpbrop then
+                tpbrop.Position = UDim2.fromOffset(mobile and 14 or 20, 5)
+                tpbrop.Size = UDim2.new(1, mobile and -120 or -170, 0, 24)
+            end
+            if fwherj then
+                fwherj.Position = UDim2.fromOffset(mobile and 18 or 24, 32)
+                fwherj.Size = UDim2.new(1, mobile and -120 or -170, 0, 14)
+                fwherj.Text = mobile and "Touch UI  •  drag header to move" or ("v2  " .. tostring(_G.ZINKA_KEY) .. " / Insert")
+            end
+            local headerBtn = mobile and 38 or 30
+            amdbtm.Size = UDim2.fromOffset(headerBtn, headerBtn)
+            fkzxbp.Size = UDim2.fromOffset(headerBtn, headerBtn)
+            amdbtm.Position = UDim2.new(1, mobile and -88 or -78, 0.5, -(headerBtn / 2))
+            fkzxbp.Position = UDim2.new(1, mobile and -42 or -40, 0.5, -(headerBtn / 2))
+            amdbtm.BackgroundTransparency = mobile and 0.05 or 0
+            fkzxbp.TextSize = mobile and 22 or 18
+            for _, page in ipairs(uetupc) do
+                if page and page:IsA("ScrollingFrame") then
+                    page.ScrollBarThickness = mobile and 4 or 4
+                    for _, child in ipairs(page:GetChildren()) do
+                        if child:IsA("UIPadding") then
+                            child.PaddingTop = UDim.new(0, mobile and 12 or 18)
+                            child.PaddingLeft = UDim.new(0, mobile and 12 or 20)
+                            child.PaddingRight = UDim.new(0, mobile and 12 or 20)
+                            child.PaddingBottom = UDim.new(0, mobile and 12 or 18)
+                        end
+                    end
+                end
+            end
+            for _, entry in ipairs(wazuxk) do
+                local btn = entry.btn
+                if btn then
+                    btn.Size = UDim2.new(1, 0, 0, mobile and 48 or 36)
+                end
+                if entry.tl then
+                    entry.tl.Visible = not mobile
+                end
+                if entry.ind then
+                    entry.ind.Size = UDim2.fromOffset(3, mobile and 24 or 20)
+                end
+            end
+            if mobileDock then
+                for _, child in ipairs(mobileDock:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child.Size = UDim2.fromOffset(math.clamp(math.floor(crtubb / 5.3), 70, 112), 46)
+                    end
+                end
+            end
         end
         _G.__ZINKA_RELAYOUT = daejly
         tuyxyk(nkdodd:GetPropertyChangedSignal("Size"):Connect(daejly))
         task.defer(daejly)
-        local bbaemv = Instance.new("TextButton")
+        bbaemv = Instance.new("TextButton")
         bbaemv.Name = "ZResize";
         bbaemv.AnchorPoint = Vector2.new(1, 1)
         bbaemv.Position = UDim2.new(1, - 2, 1, - 2);
@@ -1176,8 +1273,7 @@ then
             _G.__ZINKA_MENUSIZE = nkdodd.Size
         end))
     end)()
-    local hcgxpv = {"ESP", "Aim", "Survivor", "Killer", "Movement", "Auto Farm", "Visuals", "Misc", "Fun", "Configs"}
-    local wazuxk, uetupc = {}, {}
+    hcgxpv = {"ESP", "Aim", "Survivor", "Killer", "Movement", "Auto Farm", "Visuals", "Misc", "Fun", "Configs"}
     local function crebca(aqwmpo, afpzxt)
         local blqrij = Instance.new("Frame")
         blqrij.BackgroundTransparency = 1;
@@ -1375,7 +1471,7 @@ then
     end
     local function bfzoji(fdwizw, obcgqc, bnofqr, qyhprg, cjlfpa)
         local rjudsr = Instance.new("Frame");
-        rjudsr.Size = UDim2.new(1, 0, 0, 42);
+        rjudsr.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 48 or 42);
         rjudsr.BackgroundColor3 = hzowxr.Row;
         rjudsr.Parent = fdwizw;
         pzqwiv(rjudsr, 6)
@@ -1448,7 +1544,7 @@ then
     end
     local function pybzfq(ayphvu, amnckp, iuwugk, kxynfc)
         local jjjger = Instance.new("TextButton");
-        jjjger.Size = UDim2.new(1, 0, 0, 34);
+        jjjger.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 44 or 34);
         jjjger.BackgroundColor3 = hzowxr.Btn;
         jjjger.AutoButtonColor = false
         jjjger.Font = mgaaxo.Head;
@@ -1477,8 +1573,7 @@ then
     end
     local function ihanqu(aejjcx, peeein, gjafdh, gzorhg, xjddlk, opvmtf)
         local houfzn = Instance.new("Frame");
-        houfzn.Size = UDim2.new(1, 0, 0,
-50);
+        houfzn.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 56 or 50);
         houfzn.BackgroundColor3 = hzowxr.Row;
         houfzn.Parent = aejjcx;
         pzqwiv(houfzn, 6)
@@ -1533,7 +1628,7 @@ then
         hlnqzb.ZIndex = 6;
         hlnqzb.Parent = pvbsfc
         local function lzcwkl(fdjgnw)
-            if fdjgnw.UserInputType == Enum.UserInputType.MouseButton1 then
+            if xk_isPointerBegin(fdjgnw) then
                 drrrnf = ytuktp;
                 ytuktp(fdjgnw.Position)
             end
@@ -1565,7 +1660,7 @@ then
             return math.floor(pqbbdt * otxqaa + 0.5) / otxqaa
         end
         local odltia = Instance.new("Frame");
-        odltia.Size = UDim2.new(1, 0, 0, 50);
+        odltia.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 56 or 50);
         odltia.BackgroundColor3 = hzowxr.Row;
         odltia.Parent = vrrmhr;
         pzqwiv(odltia, 6)
@@ -1633,7 +1728,7 @@ then
         jwqjhv.ZIndex = 6;
         jwqjhv.Parent = uuarfh
         local function wskkxw(iyfvbl)
-            if iyfvbl.UserInputType == Enum.UserInputType.MouseButton1 then
+            if xk_isPointerBegin(iyfvbl) then
                 drrrnf = jafkkx;
                 jafkkx(iyfvbl.Position)
             end
@@ -1654,7 +1749,7 @@ then
         yoevzo.Parent = ikuxjx
         local ktarlg = Instance.new("TextButton");
         ktarlg.LayoutOrder = 1;
-        ktarlg.Size = UDim2.new(1, 0, 0, 42);
+        ktarlg.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 48 or 42);
         ktarlg.BackgroundColor3 = hzowxr.Row
         ktarlg.AutoButtonColor = false;
         ktarlg.Text = "";
@@ -1702,12 +1797,18 @@ then
             tmblzj.Rotation = qcdyua and - 38 or 38
             brpsmg.Rotation = qcdyua and 38 or - 38
         end
-        local qchteg = Instance.new("Frame");
+        local qchteg = Instance.new("ScrollingFrame");
         qchteg.LayoutOrder = 2;
         qchteg.BackgroundTransparency = 1;
         qchteg.Size = UDim2.new(1, 0, 0, 0)
         qchteg.AutomaticSize = Enum.AutomaticSize.Y;
         qchteg.Visible = false;
+        qchteg.Active = true
+        qchteg.ScrollingDirection = Enum.ScrollingDirection.Y
+        qchteg.ScrollBarThickness = xk_isMobileUI() and 4 or 3
+        qchteg.ScrollBarImageColor3 = jnwhbe
+        qchteg.CanvasSize = UDim2.new()
+        qchteg.AutomaticCanvasSize = Enum.AutomaticSize.Y
         qchteg.Parent = ikuxjx
         local vhkakx = Instance.new("UIListLayout");
         vhkakx.Padding = UDim.new(0, 3);
@@ -1756,7 +1857,7 @@ then
             for wqethp, lffoxf in ipairs(ssuvlg()) do
                 local kkhpxd = Instance.new("TextButton");
                 kkhpxd.LayoutOrder = wqethp;
-                kkhpxd.Size = UDim2.new(1, 0, 0, 26);
+                kkhpxd.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 40 or 26);
                 kkhpxd.AutoButtonColor = false
                 kkhpxd.Font = mgaaxo.Body;
                 kkhpxd.Text = "   " .. lffoxf;
@@ -1799,7 +1900,7 @@ then
     end
     local iusokc = Instance.new("Frame")
     iusokc.Name = "ZColorPopup";
-    iusokc.Size = UDim2.fromOffset(xk_isMobileUI() and 190 or 206, 196);
+    iusokc.Size = UDim2.fromOffset(xk_isMobileUI() and 204 or 206, 194);
     iusokc.BackgroundColor3 = Color3.fromRGB(18, 17, 25)
     iusokc.BorderSizePixel = 0;
     iusokc.Visible = false;
@@ -1813,7 +1914,7 @@ then
     vzkonu.PaddingRight = UDim.new(0, 10);
     vzkonu.Parent = iusokc
     local inkfxl = Instance.new("Frame");
-    inkfxl.Size = UDim2.fromOffset(186, 120);
+    inkfxl.Size = UDim2.new(1, -20, 0, xk_isMobileUI() and 112 or 120);
     inkfxl.BorderSizePixel = 0
     inkfxl.ZIndex = 61;
     inkfxl.Parent = iusokc;
@@ -1850,8 +1951,8 @@ then
     czcxwg(sbqcnh, Color3.new(0, 0, 0), 1.4, 0.2)
     local yaeflj = Instance.new("Frame");
     yaeflj.Position = UDim2.fromOffset(0,
-128);
-    yaeflj.Size = UDim2.fromOffset(186, 14)
+    xk_isMobileUI() and 120 or 128);
+    yaeflj.Size = UDim2.new(1, -20, 0, 14)
     yaeflj.BorderSizePixel = 0;
     yaeflj.ZIndex = 61;
     yaeflj.Parent = iusokc;
@@ -1876,8 +1977,8 @@ then
     pzqwiv(ajkkyb, 2);
     czcxwg(ajkkyb, Color3.new(0, 0, 0), 1.2, 0.3)
     local spczts = Instance.new("TextBox");
-    spczts.Position = UDim2.fromOffset(0, 150);
-    spczts.Size = UDim2.fromOffset(112, 26)
+    spczts.Position = UDim2.fromOffset(0, xk_isMobileUI() and 142 or 150);
+    spczts.Size = UDim2.new(1, -86, 0, 30)
     spczts.BackgroundColor3 = Color3.fromRGB(28, 27, 38);
     spczts.BorderSizePixel = 0;
     spczts.Font = mgaaxo.Mono
@@ -1888,8 +1989,8 @@ then
     spczts.Parent = iusokc;
     pzqwiv(spczts, 4)
     local ynyuup = Instance.new("TextButton");
-    ynyuup.Position = UDim2.fromOffset(120, 150);
-    ynyuup.Size = UDim2.fromOffset(66, 26)
+    ynyuup.Position = UDim2.new(1, -76, 0, xk_isMobileUI() and 142 or 150);
+    ynyuup.Size = UDim2.fromOffset(66, 30)
     ynyuup.BackgroundColor3 = jnwhbe;
     ynyuup.AutoButtonColor = false;
     ynyuup.Font = mgaaxo.Head;
@@ -1928,13 +2029,13 @@ then
         ddhvzm(true)
     end
     inkfxl.InputBegan:Connect(function (tuumvp)
-        if tuumvp.UserInputType == Enum.UserInputType.MouseButton1 then
+        if xk_isPointerBegin(tuumvp) then
             drrrnf = gzgkjb;
             gzgkjb(tuumvp.Position)
         end
     end)
     yaeflj.InputBegan:Connect(function (nnkalr)
-        if nnkalr.UserInputType == Enum.UserInputType.MouseButton1 then
+        if xk_isPointerBegin(nnkalr) then
             drrrnf = jkmbqb;
             jkmbqb(nnkalr.Position)
         end
@@ -2053,7 +2154,7 @@ or "")
             return math.floor(qlrjow * aqrndh + 0.5) / aqrndh
         end
         local accxgn = Instance.new("Frame");
-        accxgn.Size = UDim2.new(1, 0, 0, 56);
+        accxgn.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 64 or 56);
         accxgn.BackgroundColor3 = Color3.fromRGB(23, 22, 32);
         accxgn.Parent = jtbmrj;
         pzqwiv(accxgn, 6)
@@ -2089,7 +2190,7 @@ or "")
         local blelwm = Instance.new("TextButton");
         blelwm.AnchorPoint = Vector2.new(1, 0.5);
         blelwm.Position = UDim2.new(1, - 12, 0, 37)
-        blelwm.Size = UDim2.fromOffset(84, 22);
+        blelwm.Size = UDim2.fromOffset(xk_isMobileUI() and 96 or 84, xk_isMobileUI() and 30 or 22);
         blelwm.BackgroundColor3 = Color3.fromRGB(32, 30, 44);
         blelwm.AutoButtonColor = false
         blelwm.Font = mgaaxo.Mono;
@@ -2150,7 +2251,7 @@ or "")
     end
     local function frsqit(yrwhwn, odmbss, clrnkv, hqfcnw, iffbyb)
         local bwzhwq = Instance.new("Frame");
-        bwzhwq.Size = UDim2.new(1, 0, 0, 38);
+        bwzhwq.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 46 or 38);
         bwzhwq.BackgroundColor3 = Color3.fromRGB(20, 19, 28);
         bwzhwq.Parent = yrwhwn;
         pzqwiv(bwzhwq, 4)
@@ -2168,7 +2269,7 @@ or "")
         local wvvyqq = Instance.new("TextButton");
         wvvyqq.AnchorPoint = Vector2.new(1, 0.5);
         wvvyqq.Position = UDim2.new(1, - 12, 0.5, 0)
-        wvvyqq.Size = UDim2.fromOffset(96, 24);
+        wvvyqq.Size = UDim2.fromOffset(xk_isMobileUI() and 112 or 96, xk_isMobileUI() and 32 or 24);
         wvvyqq.BackgroundColor3 = Color3.fromRGB(32, 30, 44);
         wvvyqq.AutoButtonColor = false
         wvvyqq.Font = mgaaxo.Mono;
@@ -2196,7 +2297,7 @@ or "")
     end
     local function mydggn(vsybqj, nkcyik, rzewwr, pybave)
         local soruzp = Instance.new("Frame");
-        soruzp.Size = UDim2.new(1, 0, 0, 42);
+        soruzp.Size = UDim2.new(1, 0, 0, xk_isMobileUI() and 48 or 42);
         soruzp.BackgroundColor3 = hzowxr.Row;
         soruzp.Parent = vsybqj;
         pzqwiv(soruzp, 6)
@@ -2243,13 +2344,46 @@ or "")
             local ziwysp, iqtczi = nkdodd.AbsolutePosition.X, nkdodd.AbsolutePosition.Y
             local jaysqg = soruzp.AbsolutePosition.X - ziwysp + soruzp.AbsoluteSize.X - iusokc.AbsoluteSize.X
             local dsgoap = soruzp.AbsolutePosition.Y - iqtczi + soruzp.AbsoluteSize.Y + 4
-            dsgoap = math.min(dsgoap, nkdodd.AbsoluteSize.Y - iusokc.AbsoluteSize.Y - 8)
-            iusokc.Position = UDim2.fromOffset(math.max(jaysqg, 8), math.max(dsgoap, 8))
+            local maxX = math.max(8, nkdodd.AbsoluteSize.X - iusokc.AbsoluteSize.X - 8)
+            local maxY = math.max(8, nkdodd.AbsoluteSize.Y - iusokc.AbsoluteSize.Y - 8)
+            jaysqg = math.clamp(jaysqg, 8, maxX)
+            dsgoap = math.clamp(dsgoap, 8, maxY)
+            iusokc.Position = UDim2.fromOffset(jaysqg, dsgoap)
             iusokc.Visible = true
         end)
         return soruzp
     end
     local vwgxpa = 1
+    local function zSelectTab(index)
+        if not index or not hcgxpv[index] or not uetupc[index] then
+            return
+        end
+        vwgxpa = index
+        for qtadte, fqykcu in ipairs(wazuxk) do
+            local xjqlxn = qtadte == index
+            fqykcu.paint(xjqlxn and jnwhbe or Color3.fromRGB(155, 155, 180))
+            hgwovb(fqykcu.tl, {TextColor3 = xjqlxn and Color3.fromRGB(245, 245, 255) or Color3.fromRGB(155, 155, 180)}, 0.18):Play()
+            hgwovb(fqykcu.ind, {Size = UDim2.fromOffset(3, xjqlxn and 20 or 0)}, 0.18):Play()
+            hgwovb(fqykcu.btn, {BackgroundTransparency = xjqlxn and 0.85 or 1}, 0.18):Play()
+            if xjqlxn then
+                uetupc[qtadte].Visible = true
+                uetupc[qtadte].Position = UDim2.fromOffset(28, 0)
+                hgwovb(uetupc[qtadte], {Position = UDim2.fromOffset(0, 0)}, 0.22, Enum.EasingStyle.Quint):Play()
+            else
+                uetupc[qtadte].Visible = false
+            end
+        end
+        if mobileDock then
+            for _, other in ipairs(mobileDock:GetChildren()) do
+                if other:IsA("TextButton") then
+                    local selected = other.LayoutOrder == index
+                    other.BackgroundColor3 = selected and jnwhbe or hzowxr.Btn
+                    other.BackgroundTransparency = selected and 0.12 or 0
+                    other.TextColor3 = selected and Color3.fromRGB(250, 248, 255) or jsbusx.Normal
+                end
+            end
+        end
+    end
     for vdudfa, ydksbl in ipairs(hcgxpv) do
         local prghhv = Instance.new("TextButton");
         local mobile = xk_isMobileUI()
@@ -2298,24 +2432,64 @@ or "")
         wazuxk[vdudfa] = {btn = prghhv, paint = kkaqul, tl = ongjzu, ind = mmhuzq};
         uetupc[vdudfa] = cdezvk
         prghhv.MouseButton1Click:Connect(function ()
-            vwgxpa = vdudfa
-            for qtadte, fqykcu in ipairs(wazuxk) do
-                local xjqlxn = qtadte == vdudfa
-                fqykcu.paint(xjqlxn and jnwhbe or Color3.fromRGB(155, 155, 180))
-                hgwovb(fqykcu.tl, {TextColor3 = xjqlxn and Color3.fromRGB(245, 245, 255) or Color3.fromRGB(155, 155, 180)},
-      0.18):Play()
-                hgwovb(fqykcu.ind, {Size = UDim2.fromOffset(3, xjqlxn and 20 or 0)}, 0.18):Play()
-                hgwovb(fqykcu.btn, {BackgroundTransparency = xjqlxn and 0.85 or 1}, 0.18):Play()
-                if xjqlxn then
-                    uetupc[qtadte].Visible = true
-                    uetupc[qtadte].Position = UDim2.fromOffset(28, 0)
-                    hgwovb(uetupc[qtadte], {Position = UDim2.fromOffset(0, 0)}, 0.22, Enum.EasingStyle.Quint):Play()
-                else
-                    uetupc[qtadte].Visible = false
-                end
-            end
+            zSelectTab(vdudfa)
         end)
     end
+    mobileDock = Instance.new("ScrollingFrame")
+    mobileDock.Name = "ZMobileDock"
+    mobileDock.Position = UDim2.new(0, 0, 1, -56)
+    mobileDock.Size = UDim2.new(1, 0, 0, 56)
+    mobileDock.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+    mobileDock.BorderSizePixel = 0
+    mobileDock.ScrollBarThickness = 0
+    mobileDock.ScrollingDirection = Enum.ScrollingDirection.X
+    mobileDock.CanvasSize = UDim2.new()
+    mobileDock.AutomaticCanvasSize = Enum.AutomaticSize.X
+    mobileDock.Active = true
+    mobileDock.ZIndex = 50
+    mobileDock.Visible = xk_isMobileUI()
+    mobileDock.Parent = nkdodd
+    pzqwiv(mobileDock, 6)
+    local mobileDockStroke = czcxwg(mobileDock, jnwhbe, 1, 0.65)
+    mobileDockStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    local mobileDockLayout = Instance.new("UIListLayout")
+    mobileDockLayout.FillDirection = Enum.FillDirection.Horizontal
+    mobileDockLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    mobileDockLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    mobileDockLayout.Padding = UDim.new(0, 6)
+    mobileDockLayout.Parent = mobileDock
+    local mobileDockPad = Instance.new("UIPadding")
+    mobileDockPad.PaddingLeft = UDim.new(0, 8)
+    mobileDockPad.PaddingRight = UDim.new(0, 8)
+    mobileDockPad.PaddingTop = UDim.new(0, 5)
+    mobileDockPad.PaddingBottom = UDim.new(0, 5)
+    mobileDockPad.Parent = mobileDock
+    for index, name in ipairs(hcgxpv) do
+        local b = Instance.new("TextButton")
+        b.Name = "Tab_" .. name:gsub("%s+", "")
+        b.LayoutOrder = index
+        b.Size = UDim2.fromOffset(86, 46)
+        b.BackgroundColor3 = index == 1 and jnwhbe or hzowxr.Btn
+        b.BackgroundTransparency = index == 1 and 0.12 or 0
+        b.AutoButtonColor = false
+        b.Text = name
+        b.Font = mgaaxo.Head
+        b.TextSize = math.max(11, rxxvgn.Small)
+        b.TextColor3 = index == 1 and Color3.fromRGB(250, 248, 255) or jsbusx.Normal
+        b.TextTruncate = Enum.TextTruncate.AtEnd
+        b.ZIndex = 51
+        b.Parent = mobileDock
+        pzqwiv(b, 10)
+        b.MouseButton1Click:Connect(function()
+            zSelectTab(index)
+        end)
+    end
+    _G.__ZINKA_MOBILE_DOCK = mobileDock
+    pcall(function()
+        if type(_G.__ZINKA_RELAYOUT) == "function" then
+            _G.__ZINKA_RELAYOUT()
+        end
+    end)
     local eeshds, xpxqzr, loisnp, sqmfqx, dfmvsw = uetupc[1], uetupc[2], uetupc[3], uetupc[4], uetupc[5]
     local gihoex, rhlbkh, xjneaq, gcaojv, jmjevx = uetupc[6], uetupc[7], uetupc[8], uetupc[9], uetupc[10];
     (function ()
@@ -14190,13 +14364,11 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
         end)
         local function juieee()
             if xk_isMobileUI() then
-                local cam = workspace.CurrentCamera
-                local vp = cam and cam.ViewportSize or Vector2.new(390, 844)
-                local w = math.clamp(vp.X * 0.94, 320, 760)
-                local h = math.clamp(vp.Y * (vp.X < 500 and 0.82 or 0.84), 300, 720)
-                return UDim2.fromOffset(math.floor(w), math.floor(h))
+                local m = xk_layoutMetrics()
+                return UDim2.fromOffset(m.width, m.height)
             end
-            return _G.__ZINKA_MENUSIZE or UDim2.fromOffset(700, 470)
+            local m = xk_layoutMetrics()
+            return _G.__ZINKA_MENUSIZE or UDim2.fromOffset(m.width, m.height)
         end
         local function pdofxh()
             local kpfdzs = juieee()
@@ -14247,12 +14419,12 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
         zmob.Name = "ZMobileToggle"
         zmob.AnchorPoint = Vector2.new(1, 1)
         zmob.Position = UDim2.new(1, -16, 1, -16)
-        zmob.Size = UDim2.fromOffset(48, 48)
+        zmob.Size = UDim2.fromOffset(56, 56)
         zmob.BackgroundColor3 = Color3.fromRGB(28, 26, 42)
         zmob.AutoButtonColor = false
         zmob.Text = "Z"
         zmob.Font = mgaaxo.Head
-        zmob.TextSize = 18
+        zmob.TextSize = 20
         zmob.TextColor3 = Color3.fromRGB(238, 236, 250)
         zmob.ZIndex = 1000
         zmob.Parent = mupnyu
@@ -14277,9 +14449,8 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
                 if math.abs(vp.X - lastMobileW) > 2 or math.abs(vp.Y - lastMobileH) > 2 then
                     lastMobileW, lastMobileH = vp.X, vp.Y
                     if nkdodd.Visible then
-                        local w = math.floor(math.clamp(vp.X * 0.94, 320, 760))
-                        local h = math.floor(math.clamp(vp.Y * (vp.X < 500 and 0.82 or 0.84), 300, 720))
-                        nkdodd.Size = UDim2.fromOffset(w, h)
+                        local m = xk_layoutMetrics()
+                        nkdodd.Size = UDim2.fromOffset(m.width, m.height)
                         _G.__ZINKA_MENUSIZE = nkdodd.Size
                     end
                 end
@@ -14316,6 +14487,13 @@ wzcoec and atsmyu.HatStyle == "Drawing" then
                         pcall(function ()
                             cjcrem.MouseIconEnabled = true
                         end)
+                    end
+                    return
+                end
+                if xk_isMobileUI() then
+                    if zlipex then
+                        zlipex = false
+                        fhhaxj.Visible = false
                     end
                     return
                 end
@@ -15487,12 +15665,10 @@ and Color3.fromRGB(120, 235, 150) or Color3.fromRGB(90, 90, 115)
     fkzxbp.MouseButton1Click:Connect(function ()
         pcall(dxwxnd)
     end)
-    local initialMenuTarget = UDim2.fromOffset(700, 470)
+    local initialMenuTarget = UDim2.fromOffset(zuiMetrics.width, zuiMetrics.height)
     if xk_isMobileUI() then
-        local cam = workspace.CurrentCamera
-        local vp = cam and cam.ViewportSize or Vector2.new(390, 844)
-        initialMenuTarget = UDim2.fromOffset(math.floor(math.clamp(vp.X * 0.94, 320, 760)),
-            math.floor(math.clamp(vp.Y * (vp.X < 500 and 0.82 or 0.84), 300, 720)))
+        local m = xk_layoutMetrics()
+        initialMenuTarget = UDim2.fromOffset(m.width, m.height)
     elseif _G.__ZINKA_MENUSIZE then
         initialMenuTarget = _G.__ZINKA_MENUSIZE
     end
